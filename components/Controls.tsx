@@ -9,6 +9,10 @@ interface ControlsProps {
   onThemeSelect: (key: string) => void;
   onOpenHelp: () => void;
   currentThemeKey: string;
+  apiKey: string;
+  onApiKeyChange: (value: string) => void;
+  onGenerateTheme: (theme: string) => void;
+  customThemeLabel?: string | null;
 }
 
 const TIPS = [
@@ -26,8 +30,13 @@ const Controls: React.FC<ControlsProps> = ({
   onThemeSelect, 
   onOpenHelp,
   currentThemeKey,
+  apiKey,
+  onApiKeyChange,
+  onGenerateTheme,
+  customThemeLabel,
 }) => {
   const [tip, setTip] = useState("");
+  const [customTheme, setCustomTheme] = useState("");
 
   useEffect(() => {
     // Select a random tip on mount
@@ -39,6 +48,8 @@ const Controls: React.FC<ControlsProps> = ({
   };
 
   const isLoading = gameState === GameState.LOADING_THEME;
+  const hasCustomTheme = Boolean(customThemeLabel);
+  const canGenerate = customTheme.trim().length > 0 && apiKey.trim().length > 0;
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-4xl mx-auto mb-8 px-4">
@@ -64,6 +75,9 @@ const Controls: React.FC<ControlsProps> = ({
             disabled={isLoading}
             className="appearance-none pl-11 pr-10 py-3 bg-zinc-900 text-white font-bold rounded-full hover:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-zinc-200 cursor-pointer min-w-[220px] shadow-md transition-all"
           >
+            {hasCustomTheme && (
+              <option value="custom">{customThemeLabel}</option>
+            )}
             {Object.entries(PRESET_THEMES).map(([key, data]) => (
               <option key={key} value={key}>
                 {data.name} Theme
@@ -84,6 +98,43 @@ const Controls: React.FC<ControlsProps> = ({
           <RefreshCcw size={16} />
           {gameState === GameState.WON ? 'Play Again' : 'Reset Board'}
         </button>
+      </div>
+
+      {/* Optional: let end users bring their own Gemini API key for custom palettes. */}
+      <div className="w-full max-w-3xl bg-white border border-zinc-200 rounded-2xl p-4 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end">
+          <label className="flex-1 text-sm text-zinc-700">
+            Gemini API Key (stored in your browser)
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => onApiKeyChange(e.target.value)}
+              placeholder="Paste your Gemini API key here"
+              className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+              autoComplete="off"
+            />
+          </label>
+          <label className="flex-1 text-sm text-zinc-700">
+            Custom theme prompt
+            <input
+              type="text"
+              value={customTheme}
+              onChange={(e) => setCustomTheme(e.target.value)}
+              placeholder="e.g., Desert Mirage, Retro Futurism"
+              className="mt-2 w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+            />
+          </label>
+          <button
+            onClick={() => onGenerateTheme(customTheme)}
+            disabled={!canGenerate || isLoading}
+            className="flex items-center justify-center h-11 px-5 rounded-full bg-zinc-900 text-white text-sm font-semibold hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? "Generating..." : "Generate Palette"}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-zinc-500">
+          Your key never leaves this device except to call Gemini directly. Remove it anytime to stop AI palettes.
+        </p>
       </div>
       
       {/* Game Tip Section (Replaces Vibe) */}

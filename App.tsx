@@ -7,6 +7,7 @@ import Stats from './components/Stats';
 import InstructionsModal from './components/InstructionsModal';
 import { Check } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { generateThemePalette } from './services/geminiService';
 
 interface PersonalBest {
   moves: number;
@@ -20,6 +21,9 @@ const App: React.FC = () => {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [flippedCards, setFlippedCards] = useState<CardItem[]>([]);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [customPalette, setCustomPalette] = useState<PantoneColor[] | null>(null);
+  const [customThemeLabel, setCustomThemeLabel] = useState<string | null>(null);
   
   // Theme State - Default to 'retro'
   const [currentThemeKey, setCurrentThemeKey] = useState<string>('retro');
@@ -32,6 +36,14 @@ const App: React.FC = () => {
     const hasSeenInstructions = localStorage.getItem('pantone_instructions_seen');
     if (!hasSeenInstructions) {
       setShowInstructions(true);
+    }
+  }, []);
+
+  // Load saved Gemini API key (optional, user-provided for custom palettes).
+  useEffect(() => {
+    const savedKey = localStorage.getItem('pantone_gemini_api_key');
+    if (savedKey) {
+      setApiKey(savedKey);
     }
   }, []);
 
@@ -196,6 +208,38 @@ const App: React.FC = () => {
     // If it's a preset, load it immediately
     if (PRESET_THEMES[key]) {
       initializeGame(PRESET_THEMES[key].palette);
+    } else if (key === 'custom' && customPalette) {
+      initializeGame(customPalette);
+    }
+  };
+
+  const handleApiKeyChange = (value: string) => {
+    setApiKey(value);
+    if (value.trim().length === 0) {
+      localStorage.removeItem('pantone_gemini_api_key');
+      return;
+    }
+    localStorage.setItem('pantone_gemini_api_key', value);
+  };
+
+  const handleGenerateTheme = async (theme: string) => {
+    if (!theme.trim()) return;
+    if (!apiKey.trim()) {
+      alert('Please add your Gemini API key first.');
+      return;
+    }
+
+    try {
+      setGameState(GameState.LOADING_THEME);
+      const palette = await generateThemePalette(theme.trim(), apiKey.trim());
+      setCustomPalette(palette);
+      setCustomThemeLabel(`Custom: ${theme.trim()}`);
+      setCurrentThemeKey('custom');
+      initializeGame(palette);
+    } catch (error) {
+      console.error('Failed to generate theme palette', error);
+      alert('Theme generation failed. Double-check your API key and try again.');
+      setGameState(GameState.PLAYING);
     }
   };
 
@@ -228,6 +272,10 @@ const App: React.FC = () => {
           onThemeSelect={handleThemeSelect}
           onOpenHelp={handleOpenHelp}
           currentThemeKey={currentThemeKey}
+          apiKey={apiKey}
+          onApiKeyChange={handleApiKeyChange}
+          onGenerateTheme={handleGenerateTheme}
+          customThemeLabel={customThemeLabel}
         />
 
         {gameState === GameState.LOADING_THEME ? (
@@ -244,7 +292,7 @@ const App: React.FC = () => {
                     card={card} 
                     onClick={handleCardClick} 
                     disabled={gameState !== GameState.PLAYING}
-                    backImage={PRESET_THEMES[currentThemeKey].cardBackImage}
+                    backImage={(PRESET_THEMES[currentThemeKey] || PRESET_THEMES['retro']).cardBackImage}
                     />
                 ))}
                 </div>

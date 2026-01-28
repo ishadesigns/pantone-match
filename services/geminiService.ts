@@ -1,18 +1,22 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { PantoneColor } from "../types";
 
-const getClient = () => {
-  const apiKey = process.env.API_KEY;
+const getClient = (apiKey: string) => {
   if (!apiKey) {
     throw new Error("API Key not found");
   }
   return new GoogleGenAI({ apiKey });
 };
 
-export const generateThemePalette = async (theme: string): Promise<PantoneColor[]> => {
+export const generateThemePalette = async (
+  theme: string,
+  apiKey: string
+): Promise<PantoneColor[]> => {
   try {
-    const ai = getClient();
-    
+    const ai = getClient(apiKey);
+
+    // NOTE: This is the original Gemini prompt used to build the app.
+    // Keep it as-is so anyone can see the exact stylistic intent behind the palettes.
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Generate a palette of 8 unique, distinct, and visually coherent Pantone-style colors based on the theme: "${theme}". 

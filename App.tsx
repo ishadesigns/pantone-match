@@ -8,6 +8,7 @@ import InstructionsModal from './components/InstructionsModal';
 import { Check } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { generateThemePalette } from './services/geminiService';
+import geminiLogo from './images/gemini.png';
 
 interface PersonalBest {
   moves: number;
@@ -24,9 +25,10 @@ const App: React.FC = () => {
   const [apiKey, setApiKey] = useState('');
   const [customPalette, setCustomPalette] = useState<PantoneColor[] | null>(null);
   const [customThemeLabel, setCustomThemeLabel] = useState<string | null>(null);
+  const [showGeminiPanel, setShowGeminiPanel] = useState(false);
   
-  // Theme State - Default to 'retro'
-  const [currentThemeKey, setCurrentThemeKey] = useState<string>('retro');
+  // Theme State - Default to 'floral'
+  const [currentThemeKey, setCurrentThemeKey] = useState<string>('floral');
   const [bestScore, setBestScore] = useState<PersonalBest | null>(null);
   
   const timerRef = useRef<number | null>(null);
@@ -100,7 +102,7 @@ const App: React.FC = () => {
 
   // Initial load
   useEffect(() => {
-    initializeGame(PRESET_THEMES['retro'].palette);
+    initializeGame(PRESET_THEMES['floral'].palette);
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
@@ -250,13 +252,22 @@ const App: React.FC = () => {
     } 
     // Fallback
     else {
-      initializeGame(PRESET_THEMES['retro'].palette);
+      initializeGame(PRESET_THEMES['floral'].palette);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6] text-zinc-900 font-sans selection:bg-zinc-200">
+    <div className="min-h-screen bg-[#f3f4f6] text-zinc-900 font-sans selection:bg-zinc-200 relative">
       <header className="pt-12 pb-8 px-4 text-center flex flex-col items-center">
+        <button
+          type="button"
+          onClick={() => setShowGeminiPanel(prev => !prev)}
+          className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/80 border border-zinc-200 shadow-sm flex items-center justify-center hover:bg-white transition-colors"
+          title="Custom Gemini palette"
+          aria-label="Toggle custom Gemini palette"
+        >
+          <img src={geminiLogo} alt="Gemini logo" className="w-6 h-6" />
+        </button>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2">Pantone Match</h1>
         <p className="text-zinc-500 mb-2 max-w-md mx-auto">
           Exercise your visual memory with iconic color chips.
@@ -276,6 +287,7 @@ const App: React.FC = () => {
           onApiKeyChange={handleApiKeyChange}
           onGenerateTheme={handleGenerateTheme}
           customThemeLabel={customThemeLabel}
+          showGeminiPanel={showGeminiPanel}
         />
 
         {gameState === GameState.LOADING_THEME ? (
@@ -292,7 +304,7 @@ const App: React.FC = () => {
                     card={card} 
                     onClick={handleCardClick} 
                     disabled={gameState !== GameState.PLAYING}
-                    backImage={(PRESET_THEMES[currentThemeKey] || PRESET_THEMES['retro']).cardBackImage}
+                    backImage={(PRESET_THEMES[currentThemeKey] || PRESET_THEMES['floral']).cardBackImage}
                     />
                 ))}
                 </div>
